@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox alignment="CENTER" spacing="2.0" xmlns:fx="http://javafx.com/fxml" fx:controller="cloud.LoginPanelController">
+
+    <TextField fx:id="loginField" promptText="login"/>
+
+    <PasswordField fx:id="passwordField" promptText="password"/>
+
+    <Label fx:id="badLogin" text="Bad login or password" visible="false"/>
+
+    <HBox>
+        <padding>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+        </padding>
+        <Button maxWidth="Infinity" text="Login" onAction="#buttonLoginAction" focusTraversable="false"
+                HBox.hgrow="ALWAYS"/>
+        <Button maxWidth="Infinity" text="Registration" onAction="#buttonRegistrationAction" focusTraversable="false"
+                HBox.hgrow="ALWAYS"/>
+        <Button maxWidth="Infinity" text="Exit" onAction="#buttonExitAction" focusTraversable="false"
+                HBox.hgrow="ALWAYS"/>
+    </HBox>
+
+    <padding>
+        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+    </padding>
+
+</VBox>

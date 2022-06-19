@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox alignment="CENTER" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8.0.202-ea"
+      fx:controller="cloud.ClientPanelController" HBox.hgrow="ALWAYS">
+
+    <HBox>
+        <ComboBox fx:id="clientPanelDisksBox" onAction="#clientPanelSelectDickAction"/>
+        <TextField fx:id="clientPanelPathField" editable="false" HBox.hgrow="ALWAYS"/>
+        <Button text="UP" onAction="#clientPanelButtonUpAction"/>
+    </HBox>
+    <TableView fx:id="clientPanelFilesTable" VBox.vgrow="ALWAYS"/>
+
+</VBox>

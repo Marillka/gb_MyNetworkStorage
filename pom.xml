@@ -6,11 +6,31 @@
 
     <groupId>org.example</groupId>
     <artifactId>gb_MyNetworkStorage</artifactId>
+    <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
+
+    <modules>
+        <module>server</module>
+        <module>application</module>
+        <module>model</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
+
+     <dependencies>
+         <dependency>
+             <groupId>io.netty</groupId>
+             <artifactId>netty-all</artifactId>
+             <version>4.1.76.Final</version>
+         </dependency>
+         <dependency>
+             <groupId>org.projectlombok</groupId>
+             <artifactId>lombok</artifactId>
+             <version>1.18.24</version>
+         </dependency>
+     </dependencies>
 
 </project>

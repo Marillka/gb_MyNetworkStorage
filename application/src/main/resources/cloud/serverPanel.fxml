@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+
+<VBox alignment="CENTER" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/8.0.202-ea"
+      fx:controller="cloud.ServerPanelController">
+
+    <HBox>
+        <TextField fx:id="serverPanelPathField" editable="false" HBox.hgrow="ALWAYS"/>
+        <Button text="UP" onAction="#serverPanelButtonUpAction"/>
+    </HBox>
+    <TableView fx:id="serverPanelFilesTable" VBox.vgrow="ALWAYS"/>
+
+</VBox>
