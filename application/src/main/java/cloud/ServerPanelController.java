@@ -17,10 +17,8 @@ import models.FileInfo;
 import models.requests.*;
 import models.responses.GetFileListResponse;
 
-import java.io.IOException;
 import java.net.URL;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;

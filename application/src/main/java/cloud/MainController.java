@@ -12,6 +12,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.VBox;
 import models.requests.*;
+import models.responses.DeleteFileResponse;
 import models.responses.GetFileListResponse;
 
 import java.io.File;
@@ -22,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import org.apache.commons.io.FileUtils;
 
 
 public class MainController implements Initializable {
@@ -29,9 +31,6 @@ public class MainController implements Initializable {
     public VBox clientPanel;
     @FXML
     public VBox serverPanel;
-    @FXML
-    Button createDirButton;
-
 
     ServerPanelController serverPanelController;
     ClientPanelController clientPanelController;
@@ -131,28 +130,7 @@ public class MainController implements Initializable {
             }
 
         }
-
-
-//            if (!Files.isDirectory(pathToFileOnServer)) {
-////                File file = new File(String.valueOf(pathToFileOnServer));
-//                try {
-//                    network.sendRequest(
-//                            new DownloadFileRequest(
-//                                    new AuthRequest(ClientInfo.getLogin(), ClientInfo.getPassword()),
-//                                    pathToFileOnServer
-//                            )
-//                    );
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//            } else {
-//                Alert alert = new Alert(Alert.AlertType.ERROR, "Choose file, not directory", ButtonType.OK);
-//                alert.showAndWait();
-//            }
-//        }
-
     }
-
 
     public void deleteButtonAction(ActionEvent actionEvent) {
         if (clientPanelController.getSelectedFileName() == null && serverPanelController.getSelectedFilename() == null) {
@@ -160,18 +138,28 @@ public class MainController implements Initializable {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Файл для удаления не выбран", ButtonType.OK);
                 alert.showAndWait();
             });
-
             return;
         }
 
-        if (clientPanelController.getSelectedFileName() != null) {
-            Path pathToDeleteFile = Paths.get(clientPanelController.getCurrentPath()).resolve(clientPanelController.getSelectedFileName());
+        if (clientPanelController.getSelectedFileName() != null && clientPanelController.clientPanelFilesTable.isFocused()) {
+            String currentClientPath = ClientInfo.getCurrentClientPath().toString();
+            String fileNameToDelete = clientPanelController.getSelectedFileName();
+            Path pathToDeleteFile = Paths.get(currentClientPath + "\\" + fileNameToDelete);
             if (!Files.isDirectory(pathToDeleteFile)) {
                 try {
                     Files.delete(pathToDeleteFile);
                     clientPanelController.updateClientList(ClientInfo.getCurrentClientPath());
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Выбранный файл не может быть удален");
+                        alert.showAndWait();
+                    });
+                }
+            } else {
+                try {
+                    FileUtils.deleteDirectory(new File(String.valueOf(pathToDeleteFile)));
+                    clientPanelController.updateClientList(ClientInfo.getCurrentClientPath());
+                } catch (IOException e) {
                     Platform.runLater(() -> {
                         Alert alert = new Alert(Alert.AlertType.ERROR, "Выбранный файл не может быть удален");
                         alert.showAndWait();
@@ -180,8 +168,12 @@ public class MainController implements Initializable {
             }
         }
 
-        if (serverPanelController.getSelectedFilename() != null) {
-            Path pathToDeleteFile = Paths.get(serverPanelController.getCurrentPath()).resolve(serverPanelController.getSelectedFilename());
+        if (serverPanelController.getSelectedFilename() != null && serverPanelController.serverPanelFilesTable.isFocused()) {
+            String currentServerPath = ClientInfo.getCurrentServerPath().toString();
+//            String fileNameToDelete = serverPanelController.getSelectedFilename();
+//            serverPanelFilesTable.getSelectionModel().getSelectedItem().getFileName();
+            String fileNameToDelete = serverPanelController.serverPanelFilesTable.getSelectionModel().getSelectedItem().getFileName();
+            Path pathToDeleteFile = Paths.get(currentServerPath + "\\" + fileNameToDelete);
             try {
                 network.sendRequest(
                         new DeleteFileRequest(
@@ -192,84 +184,7 @@ public class MainController implements Initializable {
             } catch (InterruptedException e) {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось удалить файл", ButtonType.OK);
                 alert.showAndWait();
-                e.printStackTrace();
             }
-        }
-    }
-
-
-    public void createDirButtonAction(ActionEvent actionEvent) {
-
-        if (clientPanelController.getSelectedFileName() == null && serverPanelController.getSelectedFilename() == null) {
-            Platform.runLater(() -> {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION,
-                        "Выберите где создать директорию.\n" +
-                                "На сервере или на клиенте");
-                alert.showAndWait();
-            });
-            return;
-        }
-
-        if (clientPanelController.getSelectedFileName() != null) {
-            TextInputDialog textInputDialog = new TextInputDialog("Новая директория");
-            textInputDialog.setTitle("Создание новой директории на клиенте");
-            textInputDialog.setHeaderText(null);
-            textInputDialog.setContentText("Введите имя");
-            Optional<String> resultDialog = textInputDialog.showAndWait();
-
-            if (resultDialog.isPresent()) {
-                String nameOfNewDir = resultDialog.get().replaceAll("[A-Za-zA-Яа-я0-9]", "");
-                Path pathToNewDir = Paths.get(ClientInfo.getCurrentClientPath() + "\\" + nameOfNewDir);
-                if (Files.exists(pathToNewDir)) {
-                    Platform.runLater(() -> {
-                        Alert alert = new Alert(Alert.AlertType.ERROR, "Директория + " + pathToNewDir + " уже существует");
-                        alert.showAndWait();
-                    });
-                    return;
-                }
-
-                if (!Files.exists(pathToNewDir)) {
-                    try {
-                        Files.createDirectory(pathToNewDir);
-                        clientPanelController.updateClientList(ClientInfo.getCurrentClientPath());
-                    } catch (RuntimeException | IOException e) {
-                        e.printStackTrace();
-                        Platform.runLater(() -> {
-                            Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось создать директорию", ButtonType.OK);
-                            alert.showAndWait();
-                        });
-                    }
-                }
-                return;
-            }
-        }
-        
-        if (serverPanelController.getSelectedFilename() != null) {
-            TextInputDialog textInputDialog = new TextInputDialog("Новая директория");
-            textInputDialog.setTitle("Создание новой директории на сервере");
-            textInputDialog.setHeaderText(null);
-            textInputDialog.setContentText("Введите имя");
-            Optional<String> resultDialog = textInputDialog.showAndWait();
-            if (resultDialog.isPresent()) {
-                String nameOfNewDir = resultDialog.get().replaceAll("[A-Za-zA-Яа-я0-9]", "");
-                Path pathToNewDir = Paths.get(ClientInfo.getCurrentServerPath() + "\\" + nameOfNewDir);
-                try {
-                    network.sendRequest(
-                            new CreateDirRequest(
-                                    new AuthRequest(ClientInfo.getLogin(), ClientInfo.getPassword()),
-                                    pathToNewDir
-                            )
-                    );
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    Platform.runLater(() -> {
-                        Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось создать новую директорию", ButtonType.OK);
-                        alert.showAndWait();
-                    });
-
-                }
-            }
-            return;
         }
 
     }

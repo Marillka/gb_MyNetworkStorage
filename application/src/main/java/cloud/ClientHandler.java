@@ -21,7 +21,8 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
     private final ClientService clientService = new ClientService();
     private final Network network = Network.getInstance();
     private LoginPanelController loginPanelController;
-    private  ClientPanelController clientPanelController;
+    private ClientPanelController clientPanelController;
+    private ServerPanelController serverPanelController;
 
 
     @Override
@@ -54,25 +55,33 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         }
 
         // обработка ответов на регистрацию
-        if (responseFromServer instanceof RegistrationResponse && ((RegistrationResponse) responseFromServer).isRegOk()) {
-            ClientInfo.setMaxFolderDepth(((RegistrationResponse) responseFromServer).getMaxFolderDepth());
-//            clientService.loginSuccessful();
-            Platform.runLater(() -> {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Клиент успешно зарегестрирован", ButtonType.OK);
-                alert.showAndWait();
-            });
+        if (responseFromServer instanceof RegistrationResponse) {
+            RegistrationResponse response = (RegistrationResponse) responseFromServer;
+
+            if (response.isRegOk()) {
+                ClientInfo.setMaxFolderDepth(response.getMaxFolderDepth());
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Клиент успешно зарегистрирован", ButtonType.OK);
+                    alert.showAndWait();
+                });
+//                return;
+            }
+
+            if (!response.isRegOk()) {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Клиент с таким ником уже существует", ButtonType.OK);
+                    alert.showAndWait();
+                });
+
+            }
             return;
         }
-        if (responseFromServer instanceof RegistrationResponse && !((RegistrationResponse) responseFromServer).isRegOk()) {
-            Platform.runLater(() -> {
-                loginPanelController.setErrorLabel("Registration failed");
-            });
-        }
+
 
         // обработка ответов на получение листа файлов
         if (responseFromServer instanceof GetFileListResponse) {
             GetFileListResponse response = (GetFileListResponse) responseFromServer;
-            ServerPanelController serverPanelController = (ServerPanelController) ControllerRegistry.getControllerObject(ServerPanelController.class);
+//            ServerPanelController serverPanelController = (ServerPanelController) ControllerRegistry.getControllerObject(ServerPanelController.class);
             Platform.runLater(() -> {
                 try {
                     serverPanelController.updateServerList((response));
@@ -85,6 +94,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 
             });
             clientPanelController = (ClientPanelController) ControllerRegistry.getControllerObject(ClientPanelController.class);
+            serverPanelController = (ServerPanelController) ControllerRegistry.getControllerObject(ServerPanelController.class);
             return;
         }
 
@@ -141,9 +151,8 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
             }
 
 
-
-                clientPanelController.updateClientList(pathToClientDir);
-                ClientInfo.setCurrentClientPath(pathToClientDir);
+            clientPanelController.updateClientList(pathToClientDir);
+            ClientInfo.setCurrentClientPath(pathToClientDir);
 
 
             return;
@@ -167,16 +176,19 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         // Обработка ответов на удаление файла
         if (responseFromServer instanceof DeleteFileResponse) {
             DeleteFileResponse deleteFileResponse = (DeleteFileResponse) responseFromServer;
-            Platform.runLater(() -> {
-                if (deleteFileResponse.isDeleteFileOk()) {
-                    ServerPanelController serverPanelController = (ServerPanelController) ControllerRegistry.getControllerObject(ServerPanelController.class);
-                    serverPanelController.updateServerList(deleteFileResponse.getGetFileListResponse());
-                } else {
+
+            if (deleteFileResponse.isDeleteFileOk()) {
+                serverPanelController.updateServerList(deleteFileResponse.getGetFileListResponse());
+            }
+
+            if (!deleteFileResponse.isDeleteFileOk()) {
+                Platform.runLater(() -> {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось удалить выбранный файл", ButtonType.OK);
                     alert.showAndWait();
-                }
-            });
-            return;
+                });
+                serverPanelController.updateServerList(deleteFileResponse.getGetFileListResponse());
+            }
+
         }
 
         if (responseFromServer instanceof FailToOpenDirectoryResponse) {

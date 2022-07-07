@@ -50,15 +50,18 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
 
         if (messageFromClient instanceof RegistrationRequest) {
             RegistrationRequest request = (RegistrationRequest) messageFromClient;
+            RegistrationResponse registrationResponse = new RegistrationResponse(false);
             if (!dbService.isInDatabase(request.getLogin())) {
                 if (dbService.registration(request.getLogin(), request.getPassword())) {
-                    RegistrationResponse registrationResponse = new RegistrationResponse(true);
+                    registrationResponse.setRegOk(true);
                     maxUserStorageSize = dbService.getMaxStorageSizeByLogin(request.getLogin());
                     registrationResponse.setMaxFolderDepth(MAX_FOLDER_DEPTH);
                     ctx.writeAndFlush(registrationResponse);
                 } else {
-                    ctx.writeAndFlush(false);
+                    ctx.writeAndFlush(registrationResponse);
                 }
+            } else {
+                ctx.writeAndFlush(registrationResponse);
             }
             return;
         }

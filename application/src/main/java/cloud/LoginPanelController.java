@@ -81,6 +81,7 @@ public class LoginPanelController implements Initializable {
     public void registrationButtonAction(ActionEvent actionEvent) {
         String login = loginField.getText().trim();
         String password = passwordField.getText().trim();
+
         if (login.isEmpty() || login.isBlank()) {
             Platform.runLater(() -> {
                 Alert alert = new Alert(Alert.AlertType.WARNING, "Имя пользователя не указанно", ButtonType.OK);
@@ -88,6 +89,7 @@ public class LoginPanelController implements Initializable {
             });
             return;
         }
+
         if (password.isEmpty() || password.isBlank()) {
             Platform.runLater(() -> {
                 Alert alert = new Alert(Alert.AlertType.WARNING, "Пароль не указан", ButtonType.OK);
@@ -95,6 +97,7 @@ public class LoginPanelController implements Initializable {
             });
             return;
         }
+
         try {
             network.sendRequest(new RegistrationRequest(login, password));
         } catch (InterruptedException e) {
@@ -103,6 +106,7 @@ public class LoginPanelController implements Initializable {
                 alert.showAndWait();
             });
         }
+
     }
 
     public void exitButtonAction(ActionEvent actionEvent) {

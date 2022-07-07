@@ -6,8 +6,8 @@ import lombok.Setter;
 @Getter
 public class RegistrationResponse implements BasicResponse {
 
+    @Setter
     boolean regOk;
-
     @Setter
     private int maxFolderDepth;
 
