@@ -12,19 +12,20 @@ import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 
 
+
 public class NettyServer {
 
     private static final int PORT = 8189;
+    private final DbService dbService = DbService.getInstance();
 
-    public NettyServer() {
-        EventLoopGroup auth = new NioEventLoopGroup(1);
-        EventLoopGroup worker = new NioEventLoopGroup();
-
+    public void runServer() {
+        EventLoopGroup authGroup = new NioEventLoopGroup(1);
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
-            ServerBootstrap b = new ServerBootstrap();
-            b.group(auth, worker);
-            b.channel(NioServerSocketChannel.class);
-            b.childHandler(new ChannelInitializer<SocketChannel>() {
+            ServerBootstrap serverBootstrap = new ServerBootstrap();
+            serverBootstrap.group(authGroup, workerGroup);
+            serverBootstrap.channel(NioServerSocketChannel.class);
+            serverBootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel socketChannel) throws Exception {
                     socketChannel.pipeline().addLast(
@@ -33,20 +34,15 @@ public class NettyServer {
                             new BasicHandler());
                 }
             });
-
-            ChannelFuture future = b.bind(PORT).sync();
-            // добавить лог (сервер запущен)
-            future.channel().closeFuture().sync();
+            System.out.println("Server started");
+            ChannelFuture channelFuture = serverBootstrap.bind(PORT).sync();
+            channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            auth.shutdownGracefully();
-            worker.shutdownGracefully();
+            dbService.disconnect();
+            authGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
         }
     }
-
-    public static void main(String[] args) {
-        new NettyServer();
-    }
-
 }

@@ -1,11 +1,13 @@
 package cloud;
 
-import javafx.application.Application;
-import javafx.application.Platform;
 
-import java.io.File;
+
+import javafx.application.Platform;
+import models.responses.GetFileListResponse;
+
+
 import java.io.IOException;
-import java.util.List;
+
 
 // выносим логику в сервисный слой (где происходит бизнес логика)
 // network работает с сетью
@@ -14,18 +16,20 @@ import java.util.List;
 public class ClientService {
 
     public void loginSuccessful() {
-        try {
-            App.setRoot("mainPanel");
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            Platform.runLater(() -> {
+                try {
+                    App.setRoot("mainPanel");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
     }
 
-    public void putServerFileList(List<File> serverItemsList, String pathOfList) {
+    public void putServerFileList(GetFileListResponse fileListResponse) {
         ServerPanelController serverControllerObject = (ServerPanelController) ControllerRegistry.getControllerObject(ServerPanelController.class);
-       serverControllerObject.renderServerFileList(serverItemsList, pathOfList);
-
+       serverControllerObject.updateServerList(fileListResponse);
     }
+
+
 
 }

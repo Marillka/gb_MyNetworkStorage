@@ -14,7 +14,7 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("loginPanel"), 1200, 800);
+        scene = new Scene(loadFXML("loginPanel"), 1200, 600);
         stage.setTitle("Java Network Storage");
         stage.setScene(scene);
         stage.show();

@@ -1,9 +1,19 @@
 package models.requests;
 
-import lombok.Data;
+import lombok.Getter;
 
-@Data
+import java.nio.file.Path;
+
+@Getter
 public class GetFileListRequest implements BasicRequest {
+
+    private AuthRequest authRequest;
+    private String pathStr;
+
+    public GetFileListRequest(AuthRequest authRequest, Path path) {
+        this.authRequest = authRequest;
+        this.pathStr = path.normalize().toString();
+    }
 
     @Override
     public String getType() {

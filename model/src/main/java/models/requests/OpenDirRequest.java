@@ -4,13 +4,15 @@ import lombok.Getter;
 
 import java.nio.file.Path;
 
+@Getter
 public class OpenDirRequest implements BasicRequest {
 
-    @Getter
-    private String pathStr;
+    private AuthRequest authRequest;
+    private String serverPathToOpen;
 
-    public OpenDirRequest(Path path) {
-        this.pathStr = path.normalize().toString();
+    public OpenDirRequest(AuthRequest authRequest, Path path) {
+        this.authRequest = authRequest;
+        this.serverPathToOpen = path.normalize().toString();
     }
 
     @Override

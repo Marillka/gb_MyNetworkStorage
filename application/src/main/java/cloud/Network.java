@@ -1,7 +1,6 @@
 package cloud;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
@@ -15,11 +14,8 @@ import models.requests.BasicRequest;
 
 public class Network {
 
-    // Singleton - это когда у нас класс, объект которого будет во всей программе только один (до спринга был на всех проектах)
-    // описали класс так, что из него может создасться только один объект, и сделали конструктор приватным, чтобы никто не смог создать объект этого класса. Таким образом у нас будет один класс Network - который будет отвечать за работу с сетью.
     private static final Network INSTANCE = new Network();
-
-    private Channel channel;
+    private ChannelFuture channelFuture;
     private static final String HOST = "localhost";
     private static final int PORT = 8189;
 
@@ -30,20 +26,23 @@ public class Network {
                 Bootstrap bootstrap = new Bootstrap();
                 bootstrap.group(workerGroup);
                 bootstrap.channel(NioSocketChannel.class);
+                bootstrap.remoteAddress(HOST, PORT);
                 bootstrap.handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel socketChannel) throws Exception {
                         socketChannel.pipeline().addLast(
-//                                new ObjectDecoder(MB_20, ClassResolvers.cacheDisabled(null)),
                                 new ObjectDecoder(ClassResolvers.cacheDisabled(null)),
                                 new ObjectEncoder(),
                                 new ClientHandler()
                         );
                     }
                 });
-                ChannelFuture future = bootstrap.connect(HOST, PORT).sync();
-                this.channel = future.channel();
-                future.channel().closeFuture().sync();
+                channelFuture = bootstrap.connect().sync();
+                channelFuture.channel().closeFuture().sync();
+
+//                ChannelFuture future = bootstrap.connect(HOST, PORT).sync();
+//                this.channel = future.channel();
+//                future.channel().closeFuture().sync();
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -55,11 +54,11 @@ public class Network {
     }
 
     public void close() {
-        channel.close();
+        channelFuture.channel().close();
     }
 
     public void sendRequest(BasicRequest basicRequest) throws InterruptedException {
-        channel.writeAndFlush(basicRequest).sync();
+        channelFuture.channel().writeAndFlush(basicRequest);// sync();
     }
 
     public static Network getInstance() {

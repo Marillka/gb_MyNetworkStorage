@@ -1,39 +1,47 @@
 package cloud;
 
+import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import models.FileInfo;
 
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 public class ClientPanelController implements Initializable {
 
+    @FXML
     public ComboBox<String> clientPanelDisksBox;
-
+    @FXML
     public TextField clientPanelPathField;
-
+    @FXML
     public TableView<FileInfo> clientPanelFilesTable;
+
+    ClientPanelController clientPanelController = this;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         ControllerRegistry.register(this);
 
+        Image fileImage = new Image("/file-icon.png");
+        Image dirImage = new Image("/dir-icon.png");
 
-        TableColumn<FileInfo, String> clientFileTypeColumn = new TableColumn<FileInfo, String>("Type");
-        clientFileTypeColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getType().getName()));
-        clientFileTypeColumn.setPrefWidth(60);
+        TableColumn<FileInfo, ImageView> clientFileTypeColumn = new TableColumn<>();
+        clientFileTypeColumn.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getType() == FileInfo.FileType.DIRECTORY ? new ImageView(dirImage) : new ImageView(fileImage)));
+        clientFileTypeColumn.setPrefWidth(30);
 
         TableColumn<FileInfo, String> clientFileNameColumn = new TableColumn<FileInfo, String>("Name");
         clientFileNameColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getFileName()));
@@ -67,8 +75,7 @@ public class ClientPanelController implements Initializable {
         clientFileDateModifiedColumn.setPrefWidth(120);
 
         clientPanelFilesTable.getColumns().addAll(clientFileTypeColumn, clientFileNameColumn, clientFileSizeColumn, clientFileDateModifiedColumn);
-        clientPanelFilesTable.getSortOrder().add(clientFileTypeColumn);
-
+        clientPanelFilesTable.getSortOrder().add(clientFileNameColumn);
 
         clientPanelDisksBox.getItems().clear();
         for (Path p : FileSystems.getDefault().getRootDirectories()) {
@@ -83,14 +90,20 @@ public class ClientPanelController implements Initializable {
                     Path path = Paths.get(clientPanelPathField.getText()).resolve(clientPanelFilesTable.getSelectionModel().getSelectedItem().getFileName());
                     if (Files.isDirectory(path)) {
                         updateClientList(path);
+                        ClientInfo.setCurrentServerPath(path);
                     }
                 }
             }
         });
-        updateClientList(Paths.get("."));
+
+
+        Path rootClientPath = (Paths.get("."));
+        ClientInfo.setCurrentClientPath(rootClientPath);
+        updateClientList(ClientInfo.getCurrentClientPath());
     }
 
     public void updateClientList(Path path) {
+        Path parentPathStr = path.normalize().toAbsolutePath().getParent();
         clientPanelFilesTable.getItems().clear();
         try {
             clientPanelPathField.setText(path.normalize().toAbsolutePath().toString());
@@ -99,16 +112,31 @@ public class ClientPanelController implements Initializable {
                             .map(FileInfo::new)
                             .collect(Collectors.toList()));
             clientPanelFilesTable.sort();
+
+            ClientInfo.setCurrentClientPath(Path.of(path.normalize().toAbsolutePath().toString()));
         } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Failed to update file list", ButtonType.OK);
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось открыть директорию по адресу " + path, ButtonType.OK);
             alert.showAndWait();
+            clientPanelFilesTable.getItems().clear();
+            try {
+                clientPanelPathField.setText(parentPathStr.toString());
+                clientPanelFilesTable.getItems()
+                        .addAll(Files.list(parentPathStr)
+                                .map(FileInfo::new)
+                                .collect(Collectors.toList()));
+                clientPanelFilesTable.sort();
+
+                ClientInfo.setCurrentClientPath(Path.of(path.normalize().toAbsolutePath().toString()));
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
         }
     }
 
     public void clientPanelButtonUpAction(ActionEvent actionEvent) {
-        Path upperPath = Paths.get(clientPanelPathField.getText()).getParent();
-        if (upperPath != null) {
-            updateClientList(upperPath);
+        Path clientUpperPath = Paths.get(clientPanelPathField.getText()).getParent();
+        if (clientUpperPath != null) {
+            updateClientList(clientUpperPath);
         }
     }
 
@@ -118,11 +146,71 @@ public class ClientPanelController implements Initializable {
     }
 
     public String getSelectedFileName() {
-        if (!clientPanelFilesTable.isFocused()) {
+        if (clientPanelFilesTable.getSelectionModel().getSelectedItem() == null) {
             return null;
+        } else {
+            String selectedFileName = clientPanelFilesTable.getSelectionModel().getSelectedItem().getFileName();
+            return selectedFileName;
         }
-        return clientPanelFilesTable.getSelectionModel().getSelectedItem().getFileName();
+    }
+
+    public String getCurrentPath() {
+        return clientPanelPathField.getText();
+    }
+
+    public void clientPanelButtonRefreshAction(ActionEvent actionEvent) {
+//        updateClientList(Paths.get(clientPanelPathField.getText()));
+        updateClientList(ClientInfo.getCurrentClientPath());
     }
 
 
+    public void clientPanelButtonCreateNewDirectory(ActionEvent actionEvent) {
+        TextInputDialog textInputDialog = new TextInputDialog("Новая директория");
+        textInputDialog.setTitle("Создание новой директории на клиенте");
+        textInputDialog.setHeaderText(null);
+        textInputDialog.setContentText("Введите имя");
+        Optional<String> resultDialog = textInputDialog.showAndWait();
+
+        if (resultDialog.isPresent()) {
+//                String nameOfNewDir = resultDialog.get().replaceAll("[A-Za-zA-Яа-я0-9]", "");
+            String nameOfNewDir = resultDialog.get();
+
+            try {
+                Path pathToNewDir = Paths.get(ClientInfo.getCurrentClientPath() + "\\" + nameOfNewDir);
+
+                if (Files.exists(pathToNewDir)) {
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Директория '" + pathToNewDir + "' уже существует");
+                        alert.showAndWait();
+                    });
+                    return;
+                }
+
+                if (!Files.exists(pathToNewDir)) {
+                    try {
+                        Files.createDirectory(pathToNewDir);
+                        clientPanelController.updateClientList(ClientInfo.getCurrentClientPath());
+                    } catch (InvalidPathException e) {
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось создать директорию", ButtonType.OK);
+                            alert.showAndWait();
+                        });
+                    } catch (RuntimeException | IOException error) {
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось создать директорию", ButtonType.OK);
+                            alert.showAndWait();
+                        });
+                    }
+                }
+
+            } catch (RuntimeException e) {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось создать директорию", ButtonType.OK);
+                    alert.showAndWait();
+                });
+            }
+            return;
+        }
+    }
 }
+
