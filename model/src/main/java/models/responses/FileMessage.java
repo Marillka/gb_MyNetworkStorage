@@ -1,6 +1,8 @@
 package models.responses;
 
 import lombok.Getter;
+
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,7 +12,7 @@ public class FileMessage implements BasicResponse {
 
     private final String name;
     private String directory;
-    private final long size;
+    private long size;
     private final byte[] data;
 
     public FileMessage(Path path, String directory) throws IOException {
@@ -22,7 +24,12 @@ public class FileMessage implements BasicResponse {
 
     public FileMessage(Path path) throws IOException {
         this.name = path.getFileName().toString();
-        this.size = Files.size(path);
+        try {
+            this.size = Files.size(path.normalize());
+        } catch (Exception e) {
+            System.out.println("Не удалось получить размер файла");
+        }
+
         this.data = Files.readAllBytes(path);
     }
 

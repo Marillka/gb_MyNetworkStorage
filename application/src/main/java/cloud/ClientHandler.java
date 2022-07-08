@@ -6,8 +6,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import models.requests.AuthRequest;
-import models.requests.GetFirstFileListRequest;
 import models.responses.*;
 
 import java.io.File;
@@ -35,9 +33,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object messageFromServer) throws Exception {
         BasicResponse responseFromServer = (BasicResponse) messageFromServer;
-        System.out.println("Получено " + responseFromServer.getType());
 
-        // обработка ответов на авторизацию
         if (responseFromServer instanceof AuthResponse && (((AuthResponse) responseFromServer).isAuthOK())) {
             ClientInfo.setMaxFolderDepth(((AuthResponse) responseFromServer).getMaxFolderDepth());
             clientService.loginSuccessful();
@@ -54,7 +50,6 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        // обработка ответов на регистрацию
         if (responseFromServer instanceof RegistrationResponse) {
             RegistrationResponse response = (RegistrationResponse) responseFromServer;
 
@@ -64,7 +59,6 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
                     Alert alert = new Alert(Alert.AlertType.INFORMATION, "Клиент успешно зарегистрирован", ButtonType.OK);
                     alert.showAndWait();
                 });
-//                return;
             }
 
             if (!response.isRegOk()) {
@@ -74,14 +68,14 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
                 });
 
             }
+
             return;
         }
 
-
-        // обработка ответов на получение листа файлов
         if (responseFromServer instanceof GetFileListResponse) {
             GetFileListResponse response = (GetFileListResponse) responseFromServer;
-//            ServerPanelController serverPanelController = (ServerPanelController) ControllerRegistry.getControllerObject(ServerPanelController.class);
+            clientPanelController = (ClientPanelController) ControllerRegistry.getControllerObject(ClientPanelController.class);
+            serverPanelController = (ServerPanelController) ControllerRegistry.getControllerObject(ServerPanelController.class);
             Platform.runLater(() -> {
                 try {
                     serverPanelController.updateServerList((response));
@@ -93,12 +87,10 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
                 }
 
             });
-            clientPanelController = (ClientPanelController) ControllerRegistry.getControllerObject(ClientPanelController.class);
-            serverPanelController = (ServerPanelController) ControllerRegistry.getControllerObject(ServerPanelController.class);
+
             return;
         }
 
-        // обработка ответов на загрузку файла на сервер
         if (responseFromServer instanceof UploadFileResponse) {
             UploadFileResponse response = (UploadFileResponse) responseFromServer;
             String pathToClientFileStr = response.getPathToClientFileStr();
@@ -111,7 +103,6 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
                 ctx.writeAndFlush(fileMessage);
                 return;
             }
-
 
             if (noFreeStorage) {
                 Platform.runLater(() -> {
@@ -135,11 +126,9 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 //            }
         }
 
-        // обработка получения файла
         if (messageFromServer instanceof FileMessage) {
             FileMessage fileMessage = (FileMessage) messageFromServer;
 
-//            Path pathToClientDir = Paths.get(clientPanelController.getCurrentPath());
             Path pathToClientDir = ClientInfo.getCurrentClientPath();
             String fileName = fileMessage.getName();
             byte[] fileData = fileMessage.getData();
@@ -150,20 +139,17 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
                 outputStream.write(fileData);
             }
 
-
             clientPanelController.updateClientList(pathToClientDir);
             ClientInfo.setCurrentClientPath(pathToClientDir);
-
 
             return;
         }
 
-        // обработка ответов на создание директории на сервере
         if (responseFromServer instanceof CreateDirResponse) {
             CreateDirResponse createDirResponse = (CreateDirResponse) responseFromServer;
             Platform.runLater(() -> {
                 if (createDirResponse.isCreateDirOk()) {
-                    ServerPanelController serverPanelController = (ServerPanelController) ControllerRegistry.getControllerObject((ServerPanelController.class));
+//                    ServerPanelController serverPanelController = (ServerPanelController) ControllerRegistry.getControllerObject((ServerPanelController.class));
                     serverPanelController.updateServerList(createDirResponse.getGetFileListResponse());
                 } else {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Ну удалось создать папку на сервере", ButtonType.OK);
@@ -173,7 +159,6 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        // Обработка ответов на удаление файла
         if (responseFromServer instanceof DeleteFileResponse) {
             DeleteFileResponse deleteFileResponse = (DeleteFileResponse) responseFromServer;
 

@@ -89,15 +89,15 @@ public class ServerPanelController implements Initializable {
                 public void handle(MouseEvent mouseEvent) {
                     if (mouseEvent.getClickCount() == 2) {
                         if (serverPanelFilesTable.getSelectionModel().getSelectedItem().getType() == FileInfo.FileType.DIRECTORY) {
-                            Path pathToOpen = Paths.get(serverPanelPathField.getText() + "\\" + serverPanelFilesTable.getSelectionModel().getSelectedItem().getFileName());
+//                            Path pathToOpen = Paths.get(serverPanelPathField.getText() + "\\" + serverPanelFilesTable.getSelectionModel().getSelectedItem().getFileName());
+                            Path pathToOpen = Paths.get(ClientInfo.getCurrentServerPath() + "\\" + serverPanelFilesTable.getSelectionModel().getSelectedItem().getFileName());
                             try {
                                 network.sendRequest(new OpenDirRequest(
                                         new AuthRequest(ClientInfo.getLogin(), ClientInfo.getPassword()),
                                         pathToOpen
                                 ));
-                                ClientInfo.setCurrentServerPath(pathToOpen);
+//                                ClientInfo.setCurrentServerPath(pathToOpen);
                             } catch (InterruptedException e) {
-                                e.printStackTrace();
                                 Platform.runLater(() -> {
                                     Alert alert = new Alert(Alert.AlertType.ERROR, "Ошибка открытия директории", ButtonType.OK);
                                     alert.showAndWait();
@@ -147,7 +147,8 @@ public class ServerPanelController implements Initializable {
     }
 
     public void serverPanelButtonUpAction(ActionEvent actionEvent) {
-        Path upperPath = Paths.get(serverPanelPathField.getText()).getParent();
+//        Path upperPath = Paths.get(serverPanelPathField.getText()).getParent();
+        Path upperPath = ClientInfo.getCurrentServerPath().getParent();
         if (upperPath != null) {
             try {
                 network.sendRequest(new GetFileListRequest(
@@ -165,7 +166,8 @@ public class ServerPanelController implements Initializable {
         try {
             network.sendRequest(new GetFileListRequest(
                     new AuthRequest(ClientInfo.getLogin(), ClientInfo.getPassword()),
-                    Paths.get(serverPanelPathField.getText())
+//                    Paths.get(serverPanelPathField.getText())
+                    ClientInfo.getCurrentServerPath()
             ));
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -188,7 +190,8 @@ public class ServerPanelController implements Initializable {
     }
 
     public String getCurrentPath() {
-        return serverPanelPathField.getText();
+//        return serverPanelPathField.getText();
+        return String.valueOf(ClientInfo.getCurrentServerPath());
     }
 
     public boolean checkMaxFolderDepth() {

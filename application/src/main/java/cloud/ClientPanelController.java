@@ -81,16 +81,25 @@ public class ClientPanelController implements Initializable {
         for (Path p : FileSystems.getDefault().getRootDirectories()) {
             clientPanelDisksBox.getItems().add(p.toString());
         }
-        clientPanelDisksBox.getSelectionModel().select(0);
+//        clientPanelDisksBox.getSelectionModel().select(0);
 
         clientPanelFilesTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent mouseEvent) {
                 if (mouseEvent.getClickCount() == 2) {
-                    Path path = Paths.get(clientPanelPathField.getText()).resolve(clientPanelFilesTable.getSelectionModel().getSelectedItem().getFileName());
+//                    Path path = Paths.get(clientPanelPathField.getText()).resolve(clientPanelFilesTable.getSelectionModel().getSelectedItem().getFileName());
+                    Path path = Path.of(ClientInfo.getCurrentClientPath() + "\\" + (clientPanelFilesTable.getSelectionModel().getSelectedItem().getFileName()));
                     if (Files.isDirectory(path)) {
-                        updateClientList(path);
-                        ClientInfo.setCurrentServerPath(path);
+                        try {
+                            updateClientList(path);
+                        } catch (Exception e) {
+                            Platform.runLater(() -> {
+                                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось открыть директорию на клиенте", ButtonType.OK);
+                                alert.showAndWait();
+                            });
+                        }
+
+//                        ClientInfo.setCurrentClientPath(path);
                     }
                 }
             }
@@ -105,8 +114,9 @@ public class ClientPanelController implements Initializable {
     public void updateClientList(Path path) {
         Path parentPathStr = path.normalize().toAbsolutePath().getParent();
         clientPanelFilesTable.getItems().clear();
+
         try {
-            clientPanelPathField.setText(path.normalize().toAbsolutePath().toString());
+//            clientPanelPathField.setText(path.normalize().toAbsolutePath().toString());
             clientPanelFilesTable.getItems()
                     .addAll(Files.list(path)
                             .map(FileInfo::new)
@@ -114,10 +124,12 @@ public class ClientPanelController implements Initializable {
             clientPanelFilesTable.sort();
 
             ClientInfo.setCurrentClientPath(Path.of(path.normalize().toAbsolutePath().toString()));
+            clientPanelPathField.setText(path.normalize().toAbsolutePath().toString());
         } catch (IOException e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось открыть директорию по адресу " + path, ButtonType.OK);
             alert.showAndWait();
             clientPanelFilesTable.getItems().clear();
+
             try {
                 clientPanelPathField.setText(parentPathStr.toString());
                 clientPanelFilesTable.getItems()
@@ -126,9 +138,12 @@ public class ClientPanelController implements Initializable {
                                 .collect(Collectors.toList()));
                 clientPanelFilesTable.sort();
 
-                ClientInfo.setCurrentClientPath(Path.of(path.normalize().toAbsolutePath().toString()));
-            } catch (IOException ioException) {
-                ioException.printStackTrace();
+                ClientInfo.setCurrentClientPath(Path.of(path.normalize().toAbsolutePath().toString()).getParent());
+            } catch (IOException | NullPointerException exception) {
+                Platform.runLater(() -> {
+                    Alert alert1 = new Alert(Alert.AlertType.ERROR, "Не удалось обновить список файлов на клиенте", ButtonType.OK);
+                    alert1.showAndWait();
+                });
             }
         }
     }

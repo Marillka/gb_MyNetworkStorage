@@ -85,10 +85,11 @@ public class MainController implements Initializable {
         //скачивание файла с сервера
         if (serverPanelController.getSelectedFilename() != null && serverPanelController.serverPanelFilesTable.isFocused()) {
             String fileNameToDownload = serverPanelController.getSelectedFilename();
-            Path pathToFileOnServer = Paths.get(serverPanelController.getCurrentPath() + "\\" + fileNameToDownload);
-            Path first = ClientInfo.getCurrentClientPath().toAbsolutePath().normalize();
-            Path pathToClientFile = Path.of(first + "\\" + Paths.get(fileNameToDownload));
-            Path pathToClientDir = ClientInfo.getCurrentClientPath().toAbsolutePath().normalize();
+            Path pathToFileOnServer = Paths.get(ClientInfo.getCurrentServerPath() + "\\" + fileNameToDownload);
+//            Path pathToFileOnServer = Paths.get(serverPanelController.getCurrentPath() + "\\" + fileNameToDownload);
+            Path pathToCurrentClientDirectory = ClientInfo.getCurrentClientPath().toAbsolutePath().normalize();
+            Path pathToClientFile = Path.of(pathToCurrentClientDirectory + "\\" + Paths.get(fileNameToDownload));
+//            Path pathToClientDir = ClientInfo.getCurrentClientPath().toAbsolutePath().normalize();
 
             if (Files.exists(pathToClientFile)) {
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -106,7 +107,6 @@ public class MainController implements Initializable {
                                     pathToFileOnServer
                             ));
                         } catch (IOException | InterruptedException e) {
-                            e.printStackTrace();
                             Platform.runLater(() -> {
                                 Alert alert1 = new Alert(Alert.AlertType.ERROR, "Не удалось удалить файл на клиенте", ButtonType.OK);
                                 alert1.showAndWait();
@@ -122,12 +122,13 @@ public class MainController implements Initializable {
                                 new AuthRequest(ClientInfo.getLogin(), ClientInfo.getPassword()),
                                 pathToFileOnServer));
             } catch (InterruptedException e) {
-                e.printStackTrace();
                 Platform.runLater(() -> {
                     Alert alert2 = new Alert(Alert.AlertType.ERROR, "Не удалось скачать файл с сервера", ButtonType.OK);
                     alert2.showAndWait();
                 });
             }
+
+            return;
 
         }
     }
