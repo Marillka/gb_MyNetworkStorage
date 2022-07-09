@@ -12,6 +12,8 @@
         <Button text="Up" onAction="#clientPanelButtonUpAction"/>
         <Button text="NewDirectory" onAction="#clientPanelButtonCreateNewDirectory"/>
         <Button text="Refresh" onAction="#clientPanelButtonRefreshAction"/>
+        <Button fx:id="clientPanelButtonGoToTheRootDir" text="goToTheRootDir" onAction="#clientPanelButtonGoToTheRootDir"/>
+
     </HBox>
     <TableView fx:id="clientPanelFilesTable" VBox.vgrow="ALWAYS"/>
 

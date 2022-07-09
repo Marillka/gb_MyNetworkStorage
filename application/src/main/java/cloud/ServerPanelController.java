@@ -179,31 +179,8 @@ public class ServerPanelController implements Initializable {
         }
     }
 
-    public String getSelectedFilename() {
-        if (serverPanelFilesTable == null) {
-            return null;
-        }
-        if (!serverPanelFilesTable.isFocused()) {
-            return null;
-        }
-        return serverPanelFilesTable.getSelectionModel().getSelectedItem().getFileName();
-    }
 
-    public String getCurrentPath() {
-//        return serverPanelPathField.getText();
-        return String.valueOf(ClientInfo.getCurrentServerPath());
-    }
 
-    public boolean checkMaxFolderDepth() {
-        int depth = 0;
-        String rootDir = ClientInfo.getLogin();
-        Path parentPath = ClientInfo.getCurrentServerPath();
-        while (!parentPath.toString().equals(rootDir)) {
-            depth++;
-            parentPath = parentPath.getParent();
-        }
-        return depth < ClientInfo.getMaxFolderDepth();
-    }
 
 
     public void serverPanelButtonCreateNewDirectory(ActionEvent actionEvent) {
@@ -237,5 +214,46 @@ public class ServerPanelController implements Initializable {
         }
 
 
+    }
+
+    public void serverPanelButtonGoToTheRootDir(ActionEvent actionEvent) {
+        try {
+            network.sendRequest(new GetFileListRequest(
+                    new AuthRequest(ClientInfo.getLogin(), ClientInfo.getPassword()),
+                    Path.of(ClientInfo.getRootDirectoryOnServerStr())
+            ));
+        } catch (InterruptedException e) {
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось перейти в начальную директорию на сервере");
+                alert.showAndWait();
+            });
+        }
+    }
+
+    public boolean checkMaxFolderDepth() {
+        int depth = 0;
+        String rootDir = ClientInfo.getLogin();
+        Path parentPath = ClientInfo.getCurrentServerPath();
+        while (!parentPath.toString().equals(rootDir)) {
+            depth++;
+            parentPath = parentPath.getParent();
+        }
+        return depth < ClientInfo.getMaxFolderDepth();
+    }
+
+
+    public String getSelectedFilename() {
+        if (serverPanelFilesTable == null) {
+            return null;
+        }
+        if (!serverPanelFilesTable.isFocused()) {
+            return null;
+        }
+        return serverPanelFilesTable.getSelectionModel().getSelectedItem().getFileName();
+    }
+
+    public String getCurrentPath() {
+//        return serverPanelPathField.getText();
+        return String.valueOf(ClientInfo.getCurrentServerPath());
     }
 }

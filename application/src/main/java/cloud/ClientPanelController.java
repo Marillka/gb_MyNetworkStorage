@@ -107,6 +107,7 @@ public class ClientPanelController implements Initializable {
 
 
         Path rootClientPath = (Paths.get("."));
+        ClientInfo.setRootDirectoryOnClientStr(String.valueOf(Paths.get(".")));
         ClientInfo.setCurrentClientPath(rootClientPath);
         updateClientList(ClientInfo.getCurrentClientPath());
     }
@@ -226,6 +227,10 @@ public class ClientPanelController implements Initializable {
             }
             return;
         }
+    }
+
+    public void clientPanelButtonGoToTheRootDir(ActionEvent actionEvent) {
+        updateClientList(Path.of(ClientInfo.getRootDirectoryOnClientStr()));
     }
 }
 

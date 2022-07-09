@@ -54,8 +54,8 @@ public class MainController implements Initializable {
         // загрузка не сервер
         if (clientPanelController.getSelectedFileName() != null && clientPanelController.clientPanelFilesTable.isFocused()) {
             String fileName = clientPanelController.getSelectedFileName();
-            Path pathToFileOnClient = Paths.get(clientPanelController.getCurrentPath() + "\\" + fileName);
-            Path pathToServerDir = Paths.get(serverPanelController.getCurrentPath());
+            Path pathToFileOnClient = Paths.get(ClientInfo.getCurrentClientPath() + "\\" + fileName);
+            Path pathToServerDir = Paths.get(String.valueOf(ClientInfo.getCurrentServerPath()));
             if (!Files.isDirectory(pathToFileOnClient)) {
                 File file = new File(String.valueOf(pathToFileOnClient));
                 try {
@@ -80,16 +80,15 @@ public class MainController implements Initializable {
                     alert.showAndWait();
                 });
             }
+            return;
         }
 
         //скачивание файла с сервера
         if (serverPanelController.getSelectedFilename() != null && serverPanelController.serverPanelFilesTable.isFocused()) {
             String fileNameToDownload = serverPanelController.getSelectedFilename();
             Path pathToFileOnServer = Paths.get(ClientInfo.getCurrentServerPath() + "\\" + fileNameToDownload);
-//            Path pathToFileOnServer = Paths.get(serverPanelController.getCurrentPath() + "\\" + fileNameToDownload);
             Path pathToCurrentClientDirectory = ClientInfo.getCurrentClientPath().toAbsolutePath().normalize();
             Path pathToClientFile = Path.of(pathToCurrentClientDirectory + "\\" + Paths.get(fileNameToDownload));
-//            Path pathToClientDir = ClientInfo.getCurrentClientPath().toAbsolutePath().normalize();
 
             if (Files.exists(pathToClientFile)) {
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION);

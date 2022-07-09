@@ -19,7 +19,6 @@ public class UploadFileRequest implements BasicRequest {
         this.fileLength = fileLength;
     }
 
-
     @Override
     public String getType() {
         return "UploadFileRequest";

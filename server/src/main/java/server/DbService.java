@@ -11,6 +11,8 @@ public class DbService {
     private static PreparedStatement psGetLogin;
     private static PreparedStatement psCheckLogin;
     private static PreparedStatement psGetMaxStorageSize;
+    private static PreparedStatement psInsertServerRootDirectory;
+    private static PreparedStatement psGetRootServerPathByLogin;
 
     private DbService() {
         try {
@@ -65,24 +67,13 @@ public class DbService {
         psGetMaxStorageSize = connection.prepareStatement("select max_storage_size from users where login = ?");
     }
 
-//    public String getLoginByPass(String login, Integer password) {
-//        if (isInDatabase(login)) {
-//            try {
-//                prepareGetLoginByPass();
-//                psGetLogin.setString(1, login);
-//                psGetLogin.setInt(2, password.hashCode());
-//                ResultSet resultSet = psGetLogin.executeQuery();
-//                resultSet.
-//                String rss = resultSet.getString("login");
-//                resultSet.close();
-//                return rss;
-//            } catch (SQLException e) {
-//                e.printStackTrace();
-//            }
-//            return null;
-//        }
-//        return null;
-//    }
+    public static void prepareSetRootServerDirectory() throws SQLException {
+        psInsertServerRootDirectory = connection.prepareStatement("update users set (server_root_directory) = (?) where login = (?);");
+    }
+
+    public static void prepareGetRootServerDirByLogin() throws SQLException {
+        psGetRootServerPathByLogin = connection.prepareStatement("select server_root_directory from users where login = (?);");
+    }
 
     public String getLoginByPass(String login, Integer password) {
         if (isInDatabase(login)) {
@@ -103,7 +94,7 @@ public class DbService {
         return null;
     }
 
-    public long getMaxStorageSizeByLogin (String login) {
+    public long getMaxStorageSizeByLogin(String login) {
         if (isInDatabase(login)) {
             try {
                 prepareGetMaxStorageSizeByLogin();
@@ -126,7 +117,7 @@ public class DbService {
             psCheckLogin.setString(1, login);
             ResultSet resultSet = psCheckLogin.executeQuery();
 
-            if(resultSet.next()) {
+            if (resultSet.next()) {
                 resultSet.close();
                 return true;
             } else {
@@ -152,7 +143,38 @@ public class DbService {
         return false;
     }
 
+    public boolean setRootServerDirectory(String server_root_directory, String login) {
+        try {
+            prepareSetRootServerDirectory();
+            psInsertServerRootDirectory.setString(1, server_root_directory);
+            psInsertServerRootDirectory.setString(2, login);
+            psInsertServerRootDirectory.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
+    public String getRootServerPathByLogin(String login) {
+
+        if (isInDatabase(login)) {
+            try {
+                prepareGetRootServerDirByLogin();
+                psGetRootServerPathByLogin.setString(1, login);
+                ResultSet resultSet = psGetRootServerPathByLogin.executeQuery();
+                String resultSetString = resultSet.getString("server_root_directory");
+                resultSet.close();
+                return resultSetString;
+            } catch (SQLException e) {
+                e.printStackTrace();
+                System.out.println("Не удалось начальную директорию по логину");
+            }
+            return null;
+        }
+        return null;
+
+    }
 
 
 }

@@ -6,12 +6,15 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import models.requests.AuthRequest;
+import models.requests.DeleteFileRequest;
 import models.responses.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 
 public class ClientHandler extends ChannelInboundHandlerAdapter {
@@ -36,6 +39,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 
         if (responseFromServer instanceof AuthResponse && (((AuthResponse) responseFromServer).isAuthOK())) {
             ClientInfo.setMaxFolderDepth(((AuthResponse) responseFromServer).getMaxFolderDepth());
+            ClientInfo.setRootDirectoryOnServerStr(((AuthResponse) responseFromServer).getRootDirectoryOnServerStr());
             clientService.loginSuccessful();
 //            network.sendRequest(new GetFirstFileListRequest(
 //                    new AuthRequest(ClientInfo.getLogin(), ClientInfo.getPassword())
@@ -94,36 +98,37 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         if (responseFromServer instanceof UploadFileResponse) {
             UploadFileResponse response = (UploadFileResponse) responseFromServer;
             String pathToClientFileStr = response.getPathToClientFileStr();
-            String pathToServerFileStr = response.getPathToServerDirStr();
+            String clientFileName = String.valueOf(Path.of(pathToClientFileStr).getFileName());
+            String pathToServerDirStr = response.getPathToServerDirStr();
+            String pathToServerFileStr = pathToServerDirStr + "\\" + clientFileName;
             boolean needToDeleteFile = response.isNeedToDeleteFile();
             boolean noFreeStorage = response.isNoFreeStorage();
 
             if (!needToDeleteFile && !noFreeStorage) {
-                FileMessage fileMessage = new FileMessage(Paths.get(pathToClientFileStr), pathToServerFileStr);
+                FileMessage fileMessage = new FileMessage(Paths.get(pathToClientFileStr), pathToServerDirStr);
                 ctx.writeAndFlush(fileMessage);
                 return;
-            }
-
-            if (noFreeStorage) {
+            } else if (noFreeStorage) {
                 Platform.runLater(() -> {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Недостаточно свободного места", ButtonType.OK);
                     alert.showAndWait();
                 });
-                return;
-            }
+            } else if (needToDeleteFile) {
+                Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                            alert.setTitle("Удалить файл?");
+                            alert.setHeaderText("Такой файл существует, удалить файл?");
+                            alert.setContentText(pathToServerFileStr);
+                            Optional<ButtonType> option = alert.showAndWait();
 
-//            if (needToDeleteFile) {
-//                Platform.runLater(() -> {
-//                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-//                    alert.setTitle("Заменить файл?");
-//                    alert.setHeaderText("Такой файл существует, заменить файл?");
-//                    alert.setContentText(pathToServerFileStr);
-//                    Optional<ButtonType> option = alert.showAndWait();
-//                    if (option.get() == ButtonType.OK) {
-//                        ctx.writeAndFlush(new Dele)
-//                });
-//
-//            }
+                            if (option.get() == ButtonType.OK) {
+                                ctx.writeAndFlush(new DeleteFileRequest(
+                                        new AuthRequest(ClientInfo.getLogin(), ClientInfo.getPassword()),
+                                        Path.of(pathToServerFileStr)));
+                            }
+                        }
+                );
+            }
         }
 
         if (messageFromServer instanceof FileMessage) {
@@ -183,6 +188,13 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
                 alert.showAndWait();
             });
 
+        }
+
+        if (responseFromServer instanceof AccessErrorResponse) {
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Ошибка доступа", ButtonType.OK);
+                alert.showAndWait();
+            });
         }
     }
 

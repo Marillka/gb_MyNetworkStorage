@@ -12,6 +12,7 @@
         <Button fx:id = "serverPanelButtonUp" text="UP" onAction="#serverPanelButtonUpAction"/>
         <Button fx:id="serverPanelButtonCreateNewDirectory" text="NewDirectory" onAction="#serverPanelButtonCreateNewDirectory"/>
         <Button fx:id="serverPanelButtonRefresh" text="Refresh" onAction="#serverPanelButtonRefreshAction"/>
+        <Button fx:id="serverPanelButtonGoToTheRootDir" text="goToTheRootDir" onAction="#serverPanelButtonGoToTheRootDir"/>
     </HBox>
     <TableView fx:id="serverPanelFilesTable" VBox.vgrow="ALWAYS"/>
 

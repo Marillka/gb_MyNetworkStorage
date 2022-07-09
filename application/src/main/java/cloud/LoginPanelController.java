@@ -60,13 +60,18 @@ public class LoginPanelController implements Initializable {
         String log = loginField.getText().trim();
         String password = passwordField.getText().trim();
         if (log == null || log.isBlank() || log.isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Введите логин", ButtonType.OK);
-            alert.showAndWait();
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.WARNING, "Введите логин", ButtonType.OK);
+                alert.showAndWait();
+            });
             return;
         }
         if (password == null) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Введите пароль", ButtonType.OK);
-            alert.showAndWait();
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.WARNING, "Введите пароль", ButtonType.OK);
+                alert.showAndWait();
+            });
+
             return;
         }
         ClientInfo.setLogin(log);

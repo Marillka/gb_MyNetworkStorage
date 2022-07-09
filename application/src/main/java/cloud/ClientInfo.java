@@ -12,6 +12,25 @@ public class ClientInfo {
     private static Path currentClientPath;
     private static int maxFolderDepth;
 
+    private static String rootDirectoryOnClientStr;
+    private static String rootDirectoryOnServerStr;
+
+    public static String getRootDirectoryOnClientStr() {
+        return rootDirectoryOnClientStr;
+    }
+
+    public static void setRootDirectoryOnClientStr(String rootDirectoryOnClientStr) {
+        ClientInfo.rootDirectoryOnClientStr = rootDirectoryOnClientStr;
+    }
+
+    public static String getRootDirectoryOnServerStr() {
+        return rootDirectoryOnServerStr;
+    }
+
+    public static void setRootDirectoryOnServerStr(String rootDirectoryOnServerStr) {
+        ClientInfo.rootDirectoryOnServerStr = rootDirectoryOnServerStr;
+    }
+
     public static ClientInfo getInstance() {
         return INSTANCE;
     }

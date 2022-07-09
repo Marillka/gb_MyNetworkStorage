@@ -10,6 +10,9 @@ public class AuthResponse implements BasicResponse {
     private boolean authOK;
     private int maxFolderDepth;
 
+    private  String rootDirectoryOnClientStr;
+    private  String rootDirectoryOnServerStr;
+
     public AuthResponse(boolean authOK) {
         this.authOK = authOK;
     }

@@ -34,17 +34,18 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
 
         if (messageFromClient instanceof AuthRequest) {
             AuthRequest request = (AuthRequest) messageFromClient;
+
             if (checkAuth(request)) {
                 AuthResponse authResponse = new AuthResponse(true);
                 authResponse.setMaxFolderDepth(MAX_FOLDER_DEPTH);
                 maxUserStorageSize = dbService.getMaxStorageSizeByLogin((request).getLogin());
+                authResponse.setRootDirectoryOnServerStr(String.valueOf(Path.of(ROOT_DIR + "\\" + request.getLogin())));
                 ctx.writeAndFlush(authResponse);
-                System.out.println("Клиент " + (request.getLogin()) + " успешно залогинился");
                 return;
             } else {
                 ctx.writeAndFlush(new AuthResponse(false));
-                System.out.println("Клиент с ником " + (request.getLogin()) + " не смог подключиться");
             }
+
             return;
         }
 
@@ -70,15 +71,19 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
             GetFirstFileListRequest request = (GetFirstFileListRequest) messageFromClient;
             AuthRequest authRequest = request.getAuthRequest();
             Path userRootDirPath = Paths.get(ROOT_DIR + "\\" + authRequest.getLogin());
+
             if (Files.exists(userRootDirPath)) {
                 GetFileListResponse getFileListResponse = new GetFileListResponse(userRootDirPath);
                 ctx.writeAndFlush(getFileListResponse);
+                // добавление в бд
+                dbService.setRootServerDirectory(String.valueOf(userRootDirPath), authRequest.getLogin());
                 return;
             } else {
                 try {
                     Files.createDirectory(userRootDirPath);
                     GetFileListResponse getFileListResponse = new GetFileListResponse(userRootDirPath);
                     ctx.writeAndFlush(getFileListResponse);
+                    dbService.setRootServerDirectory(String.valueOf(userRootDirPath), authRequest.getLogin());
                     return;
                 } catch (RuntimeException e) {
                     e.printStackTrace();
@@ -91,29 +96,26 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
         if (messageFromClient instanceof GetFileListRequest) {
             GetFileListRequest request = (GetFileListRequest) messageFromClient;
             AuthRequest authRequest = request.getAuthRequest();
-            if (checkAuth(authRequest)) {
-                String pathToOpenStr = request.getPathStr();
+            String pathToOpenStr = request.getPathStr();
+
+            if (checkAuth(authRequest) && checkPathRights(authRequest.getLogin(), pathToOpenStr)) {
                 Path pathToOpen = Paths.get(pathToOpenStr);
                 GetFileListResponse getFileListResponse = new GetFileListResponse(pathToOpen);
                 ctx.writeAndFlush(getFileListResponse);
+            } else {
+                AccessErrorResponse accessErrorResponse = new AccessErrorResponse();
+                ctx.writeAndFlush(accessErrorResponse);
             }
-//            if (checkAuth(authRequest) && checkPathRights(authRequest.getLogin(), request.getPathStr())) {
-//                String pathToOpen = ROOT_DIR + "\\" + request.getPathStr();
-//                Path responsePath = Paths.get(pathToOpen);
-//                GetFileListResponse response = new GetFileListResponse(responsePath);
-//                ctx.writeAndFlush(response);
-//            }
 
             return;
         }
 
         if (messageFromClient instanceof OpenDirRequest) {
             OpenDirRequest request = (OpenDirRequest) messageFromClient;
-
             AuthRequest authRequest = request.getAuthRequest();
+            Path serverPathToOpen = Paths.get(((OpenDirRequest) messageFromClient).getServerPathToOpen());
 
-            if (checkAuth(authRequest)) {
-                Path serverPathToOpen = Paths.get(((OpenDirRequest) messageFromClient).getServerPathToOpen());
+            if (checkAuth(authRequest) && checkPathRights(authRequest.getLogin(), String.valueOf(serverPathToOpen))) {
                 try {
                     ctx.writeAndFlush(new GetFileListResponse(serverPathToOpen));
                 } catch (Exception e) {
@@ -125,29 +127,40 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
 
         }
 
-        if (messageFromClient instanceof OpenUpperDirRequest) {
-            Path serverPath = Paths.get(((OpenUpperDirRequest) messageFromClient).getGetParentPathStr());
-            BasicResponse basicResponse = new GetFileListResponse(serverPath);
-            ctx.writeAndFlush(basicResponse);
-            return;
-        }
+//        if (messageFromClient instanceof OpenUpperDirRequest) {
+//            if (checkAuth(authRequest) && checkPathRights(authRequest.getLogin(), pathToOpenStr)) {
+//
+//                Path serverPath = Paths.get(((OpenUpperDirRequest) messageFromClient).getGetParentPathStr());
+//                BasicResponse basicResponse = new GetFileListResponse(serverPath);
+//                ctx.writeAndFlush(basicResponse);
+//                return;
+//            }
+//        }
 
         if (messageFromClient instanceof UploadFileRequest) {
             UploadFileRequest request = (UploadFileRequest) messageFromClient;
             AuthRequest authRequest = request.getAuthRequest();
-
             String pathToServerDirStr = request.getPathToServerDirStr();
             String pathToFileOnClientStr = request.getPathToFileOnClientStr();
-//            long fileLength = request.getFileLength();// длинна файла
-//
-//            Path serverPath = Paths.get(pathToServerDirStr);// получение пути на сервере
-//            Path clientPath = Paths.get(pathToFileOnClientStr);// получение пути на клиенте
+            String fileNameOnServer = String.valueOf(Path.of(pathToFileOnClientStr).getFileName());
+            String pathToServerFileStr = pathToServerDirStr + "\\" + fileNameOnServer;
+            long fileLength = request.getFileLength();
 
-            ctx.writeAndFlush(new UploadFileResponse(
-                    pathToFileOnClientStr,
-                    pathToServerDirStr,
-                    false,
-                    false));
+            if (checkAuth(authRequest) && checkPathRights(authRequest.getLogin(), pathToServerDirStr)) {
+                if (!Files.exists(Path.of(pathToServerFileStr))) {
+                    ctx.writeAndFlush(new UploadFileResponse(
+                            pathToFileOnClientStr,
+                            pathToServerDirStr,
+                            false,
+                            false));
+                } else if (Files.exists(Path.of(pathToServerFileStr))) {
+                    ctx.writeAndFlush(new UploadFileResponse(
+                            pathToFileOnClientStr,
+                            pathToServerDirStr,
+                            true,
+                            false));
+                }
+            }
             return;
         }
 
@@ -222,13 +235,11 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
                                 new DeleteFileResponse(
                                         new GetFileListResponse(parentPathOfDeletedPath),
                                         true));
-                        return;
                     } catch (IOException e) {
                         ctx.writeAndFlush(
                                 new DeleteFileResponse(
                                         new GetFileListResponse(parentPathOfDeletedPath),
                                         false));
-                        return;
                     }
                 }
 
@@ -276,8 +287,23 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
         return login.equals(dbService.getLoginByPass(login, password.hashCode()));
     }
 
-    public boolean checkPathRights(String login, String pathStr) {
-        return (login.equals(pathStr.substring(0, login.length())));
+//    public boolean checkPathRights(String login, String pathStr) {
+//        return (login.equals(pathStr.substring(0, login.length())));
+//
+//
+//
+//    }
+
+    public boolean checkPathRights(String login, String pathToOpenStr) {
+        String rootServerDirStr = dbService.getRootServerPathByLogin(login);
+        try {
+            return rootServerDirStr.equals(pathToOpenStr.substring(0, rootServerDirStr.length()));
+        } catch (StringIndexOutOfBoundsException e) {
+            System.out.println(rootServerDirStr);
+            System.out.println(pathToOpenStr);
+            return false;
+        }
+
     }
 
     public long getSizeOfAllUserFiles(Path path) throws IOException {
