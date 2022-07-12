@@ -22,11 +22,19 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
     private final DbService dbService = DbService.getInstance();
     private static final int MAX_FOLDER_DEPTH = 10;
     private static long maxUserStorageSize;
-    private static final String ROOT_DIR = System.getProperty("user.home");
+    private static final String ROOT_DIR = System.getProperty("user.home") + "\\Network_Storage";
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
+        if (!Files.exists(Path.of(ROOT_DIR))) {
+            try {
+                Files.createDirectory(Path.of(ROOT_DIR));
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+                System.out.println("Не удалось создать директорию для пользователей на сервере");
+            }
+        }
     }
 
     @Override
@@ -126,16 +134,6 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
             return;
 
         }
-
-//        if (messageFromClient instanceof OpenUpperDirRequest) {
-//            if (checkAuth(authRequest) && checkPathRights(authRequest.getLogin(), pathToOpenStr)) {
-//
-//                Path serverPath = Paths.get(((OpenUpperDirRequest) messageFromClient).getGetParentPathStr());
-//                BasicResponse basicResponse = new GetFileListResponse(serverPath);
-//                ctx.writeAndFlush(basicResponse);
-//                return;
-//            }
-//        }
 
         if (messageFromClient instanceof UploadFileRequest) {
             UploadFileRequest request = (UploadFileRequest) messageFromClient;
@@ -264,6 +262,15 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (messageFromClient instanceof ChangeLoginRequest) {
+            ChangeLoginRequest request = (ChangeLoginRequest) messageFromClient;
+            AuthRequest authRequest = request.getAuthRequest();
+            if (checkAuth(authRequest)) {
+                System.out.println("запрос прилетел");
+                System.out.println(request.getNewLogin());
+            }
+        }
+
     }
 
 
@@ -287,17 +294,12 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
         return login.equals(dbService.getLoginByPass(login, password.hashCode()));
     }
 
-//    public boolean checkPathRights(String login, String pathStr) {
-//        return (login.equals(pathStr.substring(0, login.length())));
-//
-//
-//
-//    }
 
     public boolean checkPathRights(String login, String pathToOpenStr) {
         String rootServerDirStr = dbService.getRootServerPathByLogin(login);
         try {
-            return rootServerDirStr.equals(pathToOpenStr.substring(0, rootServerDirStr.length()));
+//            return rootServerDirStr.equals(pathToOpenStr.substring(0, rootServerDirStr.length()));
+            return pathToOpenStr.startsWith(rootServerDirStr);
         } catch (StringIndexOutOfBoundsException e) {
             System.out.println(rootServerDirStr);
             System.out.println(pathToOpenStr);

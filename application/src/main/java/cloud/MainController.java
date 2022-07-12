@@ -4,16 +4,17 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
 
 
-import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import models.requests.*;
-import models.responses.DeleteFileResponse;
-import models.responses.GetFileListResponse;
+
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.ResourceBundle;
+
 import org.apache.commons.io.FileUtils;
 
 
@@ -195,4 +197,40 @@ public class MainController implements Initializable {
     }
 
 
+    public void changeLoginAction(ActionEvent actionEvent) {
+        Platform.runLater(() -> {
+                    TextInputDialog textInputDialog = new TextInputDialog();
+                    textInputDialog.setTitle("Изменение логина");
+                    textInputDialog.setHeaderText("Введите новый логин");
+
+                    Optional<String> option = textInputDialog.showAndWait();
+                    if (!option.isEmpty()) {
+                        option.ifPresent(newLoginStr -> {
+                            if (newLoginStr.isBlank()) {
+                                Alert alert = new Alert(Alert.AlertType.WARNING, "Значение не должно быть пустым", ButtonType.OK);
+                                alert.showAndWait();
+                            }
+                            try {
+                                network.sendRequest(new ChangeLoginRequest(
+                                                new AuthRequest(ClientInfo.getLogin(), ClientInfo.getPassword()),
+                                                newLoginStr
+                                        )
+                                );
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось отправить запрос на изменение пароля", ButtonType.OK);
+                                alert.showAndWait();
+                            }
+                        });
+                    }
+
+                }
+        );
+
+
+    }
+
+    public void changePasswordAction(ActionEvent actionEvent) {
+
+    }
 }

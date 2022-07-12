@@ -8,8 +8,9 @@
       fx:controller="cloud.MainController">
 
     <MenuBar>
-        <Menu text="File">
-            <MenuItem text="Exit"/>
+        <Menu text="User">
+            <MenuItem text="Change Login" onAction="#changeLoginAction"/>
+            <MenuItem text="Change Password" onAction="#changePasswordAction"/>
         </Menu>
     </MenuBar>
 

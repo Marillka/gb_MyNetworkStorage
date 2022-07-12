@@ -130,8 +130,14 @@ public class ServerPanelController implements Initializable {
         try {
             MainController mainController = (MainController) ControllerRegistry.getControllerObject(MainController.class);
             String currentServerPathStr = fileListResponse.getPathOfFileInListStr();
-            serverPanelPathField.setText(currentServerPathStr);
+            String[] strings = currentServerPathStr.split("Network_Storage");
+            String result = "Network_Storage" + strings[1];
             ClientInfo.setCurrentServerPath(Paths.get(currentServerPathStr));
+
+//            serverPanelPathField.setText(currentServerPathStr);
+            serverPanelPathField.setText(result);
+
+
 //            serverPanelButtonUp.setDisable(currentServerPathStr.equals(ClientInfo.getLogin() + "\\")); //  "log\"
 //            mainController.createDirButton.setDisable(!checkMaxFolderDepth());
             serverPanelFilesTable.getItems().clear();

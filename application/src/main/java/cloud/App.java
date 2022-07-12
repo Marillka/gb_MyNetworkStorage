@@ -13,11 +13,13 @@ public class App extends Application {
     private static Scene scene;
 
     @Override
-    public void start(Stage stage) throws IOException {
+    public void start(Stage primaryStage) throws IOException {
         scene = new Scene(loadFXML("loginPanel"), 1200, 600);
-        stage.setTitle("Java Network Storage");
-        stage.setScene(scene);
-        stage.show();
+        primaryStage.setTitle("Java Network Storage");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+
     }
 
     public static void setRoot(String fxml) throws IOException {
