@@ -1,1 +1,5 @@
 /.idea/
+/.idea/
+/server/target/
+/application/target/
+/model/target/

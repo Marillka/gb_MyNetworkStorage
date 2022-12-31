@@ -298,7 +298,6 @@ public class BasicHandler extends ChannelInboundHandlerAdapter {
     public boolean checkPathRights(String login, String pathToOpenStr) {
         String rootServerDirStr = dbService.getRootServerPathByLogin(login);
         try {
-//            return rootServerDirStr.equals(pathToOpenStr.substring(0, rootServerDirStr.length()));
             return pathToOpenStr.startsWith(rootServerDirStr);
         } catch (StringIndexOutOfBoundsException e) {
             System.out.println(rootServerDirStr);

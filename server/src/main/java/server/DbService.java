@@ -26,8 +26,7 @@ public class DbService {
 
     public static void connect() throws ClassNotFoundException, SQLException {
         Class.forName("org.sqlite.JDBC");
-//        connection = DriverManager.getConnection("jdbc:sqlite:database/users.db");
-        connection = DriverManager.getConnection("jdbc:sqlite:Z:\\gb_MyNetworkStorage\\server\\src\\main\\java\\database\\users.db");
+        connection = DriverManager.getConnection("jdbc:sqlite:server/src/main/java/database/users.db");
         statement = connection.createStatement();
         System.out.println("Database 'Users' - connected");
     }
